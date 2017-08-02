@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Dashboard</title>
+	</head>
+	<body>
+	    <table id="data" style="width: 100%;">
+	    	<tr><th>Time</th><th>Sender</th><th>Sensor</th><th>Reading</th></tr>
+	    </table>
+		<script>
+			var socket = new WebSocket('ws://'+ location.hostname +':'+ location.port +'/socket');
+			var table = document.getElementById("data");
+			var i = 1;
+			var row = null;
+			var colors = ['#ff0000', '#00ff00', '#ff00ff', '#ffff00', '#00ffff', '#0000ff'];
+
+			function hexToRgb(hex) {
+			    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+				    return result ? {
+				        r: parseInt(result[1], 16),
+				        g: parseInt(result[2], 16),
+				        b: parseInt(result[3], 16)
+				    } : null;
+			}
+
+			function contrastColor(color) {
+    				var a = 1 - (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255;
+    				return a < 0.5 ? '#000000' : '#ffffff';
+			}
+
+			(function() {
+			  socket.onmessage = function(msg_raw) {
+				console.log(msg_raw.data);
+
+				msg = JSON.parse(msg_raw.data);
+
+				row = table.insertRow(i);
+				var backgroundColor = colors[msg.sender % colors.length];
+				row.style.backgroundColor = backgroundColor;
+				row.style.color = contrastColor(hexToRgb(backgroundColor));
+
+				var cell1 = row.insertCell(0);
+				date = new Date(msg.time * 1000);
+				cell1.innerHTML = date.getHours() +":"+ date.getMinutes() +":"+ date.getSeconds();
+
+				var cell2 = row.insertCell(1);
+				cell2.innerHTML = msg.sender;
+
+				var cell3 = row.insertCell(2);
+
+				switch(msg.sensor) {
+					case 1:
+						cell3.innerHTML = "HUMIDITY";
+					break;
+					case 2:
+						cell3.innerHTML = "TEMPERATURE";
+					break;
+					case 3:
+						cell3.innerHTML = "DUST";
+					break;
+					case 4:
+						cell3.innerHTML = "ULTRASONIC";
+					break;
+					case 5:
+						cell3.innerHTML = "SOUND";
+					break;
+					default:
+						cell3.innerHTML = "UNKOWN";
+				}
+
+				console.log("Wat");
+				var cell4 = row.insertCell(3);
+				cell4.innerHTML = msg.reading;
+
+				window.scrollTo(0, document.body.scrollHeight);
+
+				i++;
+			  };
+			})();
+		</script>
+	</body>
+</html>
